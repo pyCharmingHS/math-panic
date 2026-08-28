@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { AnswerFeedback, GameStats, Question } from "../../types/game";
+import type { AnswerFeedback, GameMode, GameStats, Question } from "../../types/game";
 
 interface GameProps {
   question: Question;
@@ -8,10 +8,11 @@ interface GameProps {
   remainingMs: number;
   durationMs: number;
   feedback: AnswerFeedback | null;
+  mode: GameMode;
   onAnswer: (index: number) => void;
 }
 
-export function Game({ question, stats, remainingMs, durationMs, feedback, onAnswer }: GameProps) {
+export function Game({ question, stats, remainingMs, durationMs, feedback, mode, onAnswer }: GameProps) {
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {
       const index = ["1", "2", "3", "4"].indexOf(event.key);
@@ -30,6 +31,13 @@ export function Game({ question, stats, remainingMs, durationMs, feedback, onAns
       <div className="flex w-full max-w-md items-center justify-between text-sm font-semibold uppercase tracking-widest text-white/60">
         <span>
           Score <span className="text-white">{stats.score.toLocaleString()}</span>
+        </span>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] tracking-wider ${
+            mode === "challenge" ? "bg-indigo-500/20 text-indigo-300" : "bg-white/10 text-white/50"
+          }`}
+        >
+          {mode === "challenge" ? "Challenge" : "Regular"}
         </span>
         <span className="flex items-center gap-1 text-white">
           {stats.streak > 0 && "🔥"} {stats.streak}

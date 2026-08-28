@@ -37,8 +37,10 @@ function reducer(state: EngineState, action: Action): EngineState {
   }
 }
 
-export function useGame() {
-  const [state, dispatch] = useReducer(reducer, undefined, () => createInitialState(createDefaultConfig()));
+export function useGame(initialConfig?: GameConfig) {
+  const [state, dispatch] = useReducer(reducer, undefined, () =>
+    createInitialState(initialConfig ?? createDefaultConfig()),
+  );
 
   const now = useTimer(state.phase === "PLAYING");
 
@@ -61,9 +63,15 @@ export function useGame() {
     (index: number) => dispatch({ type: "ANSWER", index, now: performance.now() }),
     [],
   );
+  // Retry the identical challenge (same seed) in challenge mode — that's the
+  // point of a shared link. A regular-mode run gets a fresh random seed.
   const playAgain = useCallback(
-    () => dispatch({ type: "RESTART", config: createDefaultConfig() }),
-    [],
+    () =>
+      dispatch({
+        type: "RESTART",
+        config: state.config.mode === "challenge" ? state.config : createDefaultConfig(),
+      }),
+    [state.config],
   );
 
   // `durationMs` is the base session length — used as the timer bar's fixed
@@ -79,6 +87,7 @@ export function useGame() {
 
   return {
     phase: state.phase,
+    config: state.config,
     question: state.question,
     stats: state.stats,
     feedback: state.feedback,
