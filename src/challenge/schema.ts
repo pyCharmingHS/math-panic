@@ -12,6 +12,7 @@ export interface ChallengePayload {
   message?: string;
   duration: number;
   startingDifficulty: number;
+  answerMode: "choice" | "typed";
   seed: string;
 }
 
@@ -36,6 +37,7 @@ export function isValidChallengePayload(value: unknown): value is ChallengePaylo
     v.startingDifficulty <= DIFFICULTY_RANGE.max &&
     typeof v.seed === "string" &&
     SEED_PATTERN.test(v.seed) &&
+    (v.answerMode === "choice" || v.answerMode === "typed") &&
     isValidOptionalText(v.name) &&
     isValidOptionalText(v.intro) &&
     isValidOptionalText(v.message)

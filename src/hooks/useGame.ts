@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer } from "react";
-import type { GameConfig } from "../types/game";
+import type { AnswerMode, GameConfig } from "../types/game";
 import {
   type EngineState,
   beginCountdown,
@@ -8,7 +8,9 @@ import {
   createInitialState,
   quickRestart,
   restart,
-  submitAnswer,
+  setAnswerMode,
+  submitChoiceAnswer,
+  submitTypedAnswer,
   tick,
 } from "../game/gameEngine";
 import { useTimer } from "./useTimer";
@@ -18,10 +20,11 @@ type Action =
   | { type: "START_COUNTDOWN" }
   | { type: "BEGIN_PLAYING"; now: number }
   | { type: "TICK"; now: number }
-  | { type: "ANSWER"; index: number; now: number }
+  | { type: "ANSWER"; value: number; now: number }
   | { type: "RESTART"; config: GameConfig }
   | { type: "QUICK_RESTART"; config: GameConfig }
-  | { type: "RETURN_TO_MENU" };
+  | { type: "RETURN_TO_MENU" }
+  | { type: "SET_ANSWER_MODE"; answerMode: AnswerMode };
 
 function reducer(state: EngineState, action: Action): EngineState {
   switch (action.type) {
@@ -32,13 +35,17 @@ function reducer(state: EngineState, action: Action): EngineState {
     case "TICK":
       return tick(state, action.now);
     case "ANSWER":
-      return submitAnswer(state, action.index, action.now);
+      return state.config.answerMode === "typed"
+        ? submitTypedAnswer(state, action.value, action.now)
+        : submitChoiceAnswer(state, action.value, action.now);
     case "RESTART":
       return restart(action.config);
     case "QUICK_RESTART":
       return quickRestart(action.config);
     case "RETURN_TO_MENU":
       return restart(state.config);
+    case "SET_ANSWER_MODE":
+      return setAnswerMode(state, action.answerMode);
     default:
       return state;
   }
@@ -67,14 +74,22 @@ export function useGame(initialConfig?: GameConfig) {
     [],
   );
   const answer = useCallback(
-    (index: number) => dispatch({ type: "ANSWER", index, now: performance.now() }),
+    (value: number) => dispatch({ type: "ANSWER", value, now: performance.now() }),
+    [],
+  );
+  const setAnswerModeAction = useCallback(
+    (answerMode: AnswerMode) => dispatch({ type: "SET_ANSWER_MODE", answerMode }),
     [],
   );
 
   // Challenge mode retries the identical seed — that's the point of a shared
-  // link. Regular mode gets a fresh random seed for the next run.
+  // link. Regular mode gets a fresh random seed but keeps the chosen answer
+  // mode (Play Again shouldn't silently drop you back into choice mode).
   const nextRunConfig = useCallback(
-    () => (state.config.mode === "challenge" ? state.config : createDefaultConfig()),
+    () =>
+      state.config.mode === "challenge"
+        ? state.config
+        : createDefaultConfig({ answerMode: state.config.answerMode }),
     [state.config],
   );
 
@@ -108,6 +123,14 @@ export function useGame(initialConfig?: GameConfig) {
     remainingMs,
     durationMs,
     currentLevel: Math.round(state.difficultyScore),
-    actions: { start, beginPlaying: beginPlayingAction, answer, playAgain, restartNow, returnToMenu },
+    actions: {
+      start,
+      beginPlaying: beginPlayingAction,
+      answer,
+      playAgain,
+      restartNow,
+      returnToMenu,
+      setAnswerMode: setAnswerModeAction,
+    },
   };
 }

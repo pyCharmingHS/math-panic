@@ -9,6 +9,13 @@ export type GamePhase = "IDLE" | "COUNTDOWN" | "PLAYING" | "FINISHED";
  */
 export type GameMode = "regular" | "challenge";
 
+/**
+ * "choice": pick from 4 options (the current default).
+ * "typed": no options shown at all — type the number yourself. Same
+ * question generation either way; only how the answer is submitted differs.
+ */
+export type AnswerMode = "choice" | "typed";
+
 export type QuestionType =
   | "addition"
   | "subtraction"
@@ -44,6 +51,7 @@ export interface GameStats {
 export interface GameConfig {
   version: number;
   mode: GameMode;
+  answerMode: AnswerMode;
   name?: string;
   intro?: string;
   message?: string;
@@ -58,6 +66,7 @@ export interface AnswerFeedback {
   pointsAwarded: number;
   /** Signed ms added/removed from the clock for this answer. */
   timeDeltaMs: number;
+  /** -1 in typed mode, where there's no option index. */
   selectedIndex: number;
   correctIndex: number;
   key: number;

@@ -10,6 +10,7 @@ const basePayload: ChallengePayload = {
   message: "Beat my score 😈",
   duration: 30,
   startingDifficulty: 3,
+  answerMode: "typed",
   seed: "a83f91",
 };
 
@@ -20,7 +21,7 @@ describe("encodeChallenge / decodeChallenge round-trip", () => {
   });
 
   it("round-trips a payload with no optional fields", () => {
-    const minimal: ChallengePayload = { v: 1, duration: 60, startingDifficulty: 1, seed: "abc123" };
+    const minimal: ChallengePayload = { v: 1, duration: 60, startingDifficulty: 1, answerMode: "choice", seed: "abc123" };
     expect(decodeChallenge(encodeChallenge(minimal))).toEqual(minimal);
   });
 
@@ -67,6 +68,17 @@ describe("isValidChallengePayload", () => {
 
   it("rejects a seed with disallowed characters", () => {
     expect(isValidChallengePayload({ ...basePayload, seed: "not valid!!" })).toBe(false);
+  });
+
+  it("rejects an invalid or missing answerMode", () => {
+    expect(isValidChallengePayload({ ...basePayload, answerMode: "hard" })).toBe(false);
+    const { answerMode: _omit, ...withoutAnswerMode } = basePayload;
+    expect(isValidChallengePayload(withoutAnswerMode)).toBe(false);
+  });
+
+  it("accepts both valid answerMode values", () => {
+    expect(isValidChallengePayload({ ...basePayload, answerMode: "choice" })).toBe(true);
+    expect(isValidChallengePayload({ ...basePayload, answerMode: "typed" })).toBe(true);
   });
 
   it("rejects text fields that are too long", () => {

@@ -38,6 +38,7 @@ export function createDefaultConfig(overrides: Partial<GameConfig> = {}): GameCo
   return {
     version: 1,
     mode: "regular",
+    answerMode: "choice",
     duration: 60,
     startingDifficulty: 1,
     seed: randomSeed(),
@@ -49,6 +50,7 @@ export function createChallengeConfig(payload: ChallengePayload): GameConfig {
   return {
     version: payload.v,
     mode: "challenge",
+    answerMode: payload.answerMode,
     name: payload.name,
     intro: payload.intro,
     message: payload.message,
@@ -67,6 +69,7 @@ export function toChallengePayload(config: GameConfig): ChallengePayload {
     message: config.message,
     duration: config.duration,
     startingDifficulty: config.startingDifficulty,
+    answerMode: config.answerMode,
     seed: config.seed,
   };
 }
@@ -93,6 +96,12 @@ export function beginCountdown(state: EngineState): EngineState {
   return { ...state, phase: "COUNTDOWN" };
 }
 
+/** Answer mode is locked in a challenge — it's part of what makes the link a fair shared run. */
+export function setAnswerMode(state: EngineState, answerMode: GameConfig["answerMode"]): EngineState {
+  if (state.phase !== "IDLE" || state.config.mode === "challenge") return state;
+  return { ...state, config: { ...state.config, answerMode } };
+}
+
 export function beginPlaying(state: EngineState, now: number): EngineState {
   if (state.phase !== "COUNTDOWN") return state;
   const question = generateQuestion(levelFromScore(state.difficultyScore), state.rng);
@@ -109,15 +118,33 @@ export function tick(state: EngineState, now: number): EngineState {
   return state;
 }
 
-export function submitAnswer(state: EngineState, selectedIndex: number, now: number): EngineState {
-  if (state.phase !== "PLAYING" || !state.question || state.questionStartedAt === null || state.startedAt === null) {
-    return state;
-  }
+/** Choice mode: `selectedIndex` picks one of `question.options`. */
+export function submitChoiceAnswer(state: EngineState, selectedIndex: number, now: number): EngineState {
+  if (!canSubmit(state)) return state;
+  const correctIndex = state.question!.options.indexOf(state.question!.correctAnswer);
+  return finalizeAnswer(state, selectedIndex === correctIndex, correctIndex, selectedIndex, now);
+}
 
-  const { question } = state;
-  const correctIndex = question.options.indexOf(question.correctAnswer);
-  const wasCorrect = selectedIndex === correctIndex;
-  const responseTimeMs = Math.max(0, now - state.questionStartedAt);
+/** Typed mode: `value` is the number the player typed, compared directly against the answer. */
+export function submitTypedAnswer(state: EngineState, value: number, now: number): EngineState {
+  if (!canSubmit(state)) return state;
+  const correctIndex = state.question!.options.indexOf(state.question!.correctAnswer);
+  return finalizeAnswer(state, value === state.question!.correctAnswer, correctIndex, -1, now);
+}
+
+function canSubmit(state: EngineState): boolean {
+  return state.phase === "PLAYING" && state.question !== null && state.questionStartedAt !== null && state.startedAt !== null;
+}
+
+function finalizeAnswer(
+  state: EngineState,
+  wasCorrect: boolean,
+  correctIndex: number,
+  selectedIndex: number,
+  now: number,
+): EngineState {
+  const question = state.question!;
+  const responseTimeMs = Math.max(0, now - state.questionStartedAt!);
 
   const newStreak = wasCorrect ? state.stats.streak + 1 : 0;
   const pointsDelta = wasCorrect
@@ -160,7 +187,7 @@ export function submitAnswer(state: EngineState, selectedIndex: number, now: num
   // A miss penalty can push the effective deadline behind "now" — end the
   // run immediately instead of dealing a next question into negative time.
   const effectiveDurationMs = state.config.duration * 1000 + timeAdjustmentMs;
-  const elapsedMs = now - state.startedAt;
+  const elapsedMs = now - state.startedAt!;
   if (elapsedMs >= effectiveDurationMs) {
     return {
       ...state,
