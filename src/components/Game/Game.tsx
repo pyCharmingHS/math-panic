@@ -101,8 +101,8 @@ export function Game({
             {mode === "challenge" ? "Challenge" : "Regular"}
           </span>
           {isTyped && (
-            <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] tracking-wider text-rose-300">
-              Hardcore
+            <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] font-black tracking-wider text-rose-300">
+              Hardcore ×1.5
             </span>
           )}
         </span>
@@ -185,14 +185,17 @@ export function Game({
             <motion.div
               key={feedback.key}
               initial={{ opacity: 0, y: 0, scale: 0.9 }}
-              animate={{ opacity: 1, y: -24, scale: 1 }}
+              animate={{ opacity: 1, y: -16, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
-              className={`pointer-events-none absolute top-0 text-2xl font-extrabold ${
+              className={`pointer-events-none absolute top-8 flex items-baseline gap-1.5 text-2xl font-extrabold ${
                 feedback.kind === "correct" ? "text-emerald-400" : "text-rose-400"
               }`}
             >
-              {feedback.pointsAwarded >= 0 ? `+${feedback.pointsAwarded}` : feedback.pointsAwarded}
+              <span>{feedback.pointsAwarded >= 0 ? `+${feedback.pointsAwarded}` : feedback.pointsAwarded}</span>
+              {isTyped && feedback.kind === "correct" && (
+                <span className="text-sm font-black text-rose-300">×1.5</span>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
