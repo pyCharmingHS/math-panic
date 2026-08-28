@@ -148,7 +148,7 @@ function finalizeAnswer(
 
   const newStreak = wasCorrect ? state.stats.streak + 1 : 0;
   const pointsDelta = wasCorrect
-    ? computePoints(question.difficulty, responseTimeMs, newStreak)
+    ? computePoints(question.difficulty, responseTimeMs, newStreak, state.config.answerMode === "typed")
     : -SCORING_CONFIG.missPenalty;
   const timeDeltaMs = wasCorrect ? TIME_ECONOMY.correctBonusMs : -TIME_ECONOMY.incorrectPenaltyMs;
 

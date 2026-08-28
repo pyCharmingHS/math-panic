@@ -130,6 +130,23 @@ describe("submitTypedAnswer (Hardcore mode)", () => {
     expect(state.feedback?.kind).toBe("incorrect");
   });
 
+  it("awards 1.5x the points of choice mode for an equivalent correct answer", () => {
+    // startingDifficulty 1 keeps the difficulty/streak multipliers at exactly
+    // 1, so the two calls' results can be compared without rounding drift.
+    const config = { seed: "hardcore-bonus", startingDifficulty: 1 } as const;
+    let choiceState = start(createDefaultConfig({ ...config, answerMode: "choice" }));
+    let typedState = start(createDefaultConfig({ ...config, answerMode: "typed" }));
+
+    // Same seed -> same first question in both, so this is a fair comparison.
+    expect(choiceState.question!.expression).toBe(typedState.question!.expression);
+
+    const correctIndex = choiceState.question!.options.indexOf(choiceState.question!.correctAnswer);
+    choiceState = submitChoiceAnswer(choiceState, correctIndex, 1000);
+    typedState = submitTypedAnswer(typedState, typedState.question!.correctAnswer, 1000);
+
+    expect(typedState.feedback!.pointsAwarded).toBe(Math.round(choiceState.feedback!.pointsAwarded * 1.5));
+  });
+
   it("correctly matches a negative correctAnswer when typed exactly", () => {
     // Level 3 includes a generator that can produce negative answers; force
     // it deterministically by scanning seeds until we find one that does.

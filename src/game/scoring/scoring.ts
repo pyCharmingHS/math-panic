@@ -1,7 +1,7 @@
 /**
- * Central, tunable scoring config. Points = base × difficulty × speed × streak.
- * Nothing about the formula is final — tune the numbers here as the game
- * gets playtested, without touching call sites.
+ * Central, tunable scoring config. Points = base × difficulty × speed ×
+ * streak × hardcore. Nothing about the formula is final — tune the numbers
+ * here as the game gets playtested, without touching call sites.
  */
 export const SCORING_CONFIG = {
   basePoints: 100,
@@ -9,7 +9,12 @@ export const SCORING_CONFIG = {
   // Flat deduction on a wrong answer. Set high enough that blind guessing
   // (~25% hit rate across 4 options) has clearly negative expected value even
   // at the fastest speed tier — otherwise mashing one button forever is free.
+  // Typed mode doesn't need this to be higher: guessing a specific number
+  // out of an effectively unbounded range is already a near-zero-odds bet.
   missPenalty: 80,
+  // Reward for playing without hints — no options to eliminate against, you
+  // have to actually compute the answer.
+  hardcoreMultiplier: 1.5,
   speedTiers: [
     { maxMs: 1500, multiplier: 1.5 },
     { maxMs: 3000, multiplier: 1.25 },
@@ -49,9 +54,15 @@ export function streakMultiplier(streak: number): number {
 }
 
 /** `streak` should be the streak count *after* this correct answer. */
-export function computePoints(level: number, responseTimeMs: number, streak: number): number {
+export function computePoints(
+  level: number,
+  responseTimeMs: number,
+  streak: number,
+  isHardcore = false,
+): number {
   const difficultyMult = 1 + (level - 1) * SCORING_CONFIG.difficultyMultiplierStep;
   const speedMult = speedMultiplier(responseTimeMs);
   const streakMult = streakMultiplier(streak);
-  return Math.round(SCORING_CONFIG.basePoints * difficultyMult * speedMult * streakMult);
+  const hardcoreMult = isHardcore ? SCORING_CONFIG.hardcoreMultiplier : 1;
+  return Math.round(SCORING_CONFIG.basePoints * difficultyMult * speedMult * streakMult * hardcoreMult);
 }

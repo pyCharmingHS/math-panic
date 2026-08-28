@@ -33,7 +33,7 @@ export function Landing({ config, personalBest, onStart, onSetAnswerMode }: Land
             isHardcore ? "bg-rose-500/20 text-rose-300" : "bg-white/10 text-white/50"
           }`}
         >
-          {isHardcore ? "Hardcore — type the answer, no hints" : "Multiple Choice"}
+          {isHardcore ? "Hardcore — type the answer, no hints, 1.5x points" : "Multiple Choice"}
         </span>
       ) : (
         <div className="flex w-full max-w-xs gap-2">
@@ -62,7 +62,7 @@ export function Landing({ config, personalBest, onStart, onSetAnswerMode }: Land
         </div>
       )}
       {!isChallenge && isHardcore && (
-        <p className="max-w-xs text-xs text-white/40">No options. Type the number yourself.</p>
+        <p className="max-w-xs text-xs text-white/40">No options. Type the number yourself. 1.5x points.</p>
       )}
 
       <button

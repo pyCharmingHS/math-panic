@@ -49,6 +49,16 @@ describe("computePoints", () => {
       }
     }
   });
+
+  it("applies the hardcore multiplier only when isHardcore is true", () => {
+    // level 1, streak 0 (both multipliers exactly 1) keeps the arithmetic
+    // exact, avoiding double-rounding ambiguity between the two calls.
+    const normal = computePoints(1, 1000, 0);
+    const hardcore = computePoints(1, 1000, 0, true);
+    expect(computePoints(1, 1000, 0, false)).toBe(normal);
+    expect(hardcore).toBe(Math.round(normal * SCORING_CONFIG.hardcoreMultiplier));
+    expect(hardcore).toBeGreaterThan(normal);
+  });
 });
 
 describe("SCORING_CONFIG / TIME_ECONOMY", () => {
