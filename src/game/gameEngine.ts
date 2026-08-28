@@ -193,3 +193,8 @@ export function submitAnswer(state: EngineState, selectedIndex: number, now: num
 export function restart(config: GameConfig): EngineState {
   return createInitialState(config);
 }
+
+/** Abandons the current run and jumps straight back into the countdown — no detour through the menu. */
+export function quickRestart(config: GameConfig): EngineState {
+  return beginCountdown(createInitialState(config));
+}

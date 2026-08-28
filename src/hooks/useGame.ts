@@ -6,6 +6,7 @@ import {
   beginPlaying,
   createDefaultConfig,
   createInitialState,
+  quickRestart,
   restart,
   submitAnswer,
   tick,
@@ -18,7 +19,9 @@ type Action =
   | { type: "BEGIN_PLAYING"; now: number }
   | { type: "TICK"; now: number }
   | { type: "ANSWER"; index: number; now: number }
-  | { type: "RESTART"; config: GameConfig };
+  | { type: "RESTART"; config: GameConfig }
+  | { type: "QUICK_RESTART"; config: GameConfig }
+  | { type: "RETURN_TO_MENU" };
 
 function reducer(state: EngineState, action: Action): EngineState {
   switch (action.type) {
@@ -32,6 +35,10 @@ function reducer(state: EngineState, action: Action): EngineState {
       return submitAnswer(state, action.index, action.now);
     case "RESTART":
       return restart(action.config);
+    case "QUICK_RESTART":
+      return quickRestart(action.config);
+    case "RETURN_TO_MENU":
+      return restart(state.config);
     default:
       return state;
   }
@@ -63,16 +70,23 @@ export function useGame(initialConfig?: GameConfig) {
     (index: number) => dispatch({ type: "ANSWER", index, now: performance.now() }),
     [],
   );
-  // Retry the identical challenge (same seed) in challenge mode — that's the
-  // point of a shared link. A regular-mode run gets a fresh random seed.
-  const playAgain = useCallback(
-    () =>
-      dispatch({
-        type: "RESTART",
-        config: state.config.mode === "challenge" ? state.config : createDefaultConfig(),
-      }),
+
+  // Challenge mode retries the identical seed — that's the point of a shared
+  // link. Regular mode gets a fresh random seed for the next run.
+  const nextRunConfig = useCallback(
+    () => (state.config.mode === "challenge" ? state.config : createDefaultConfig()),
     [state.config],
   );
+
+  const playAgain = useCallback(
+    () => dispatch({ type: "RESTART", config: nextRunConfig() }),
+    [nextRunConfig],
+  );
+  const restartNow = useCallback(
+    () => dispatch({ type: "QUICK_RESTART", config: nextRunConfig() }),
+    [nextRunConfig],
+  );
+  const returnToMenu = useCallback(() => dispatch({ type: "RETURN_TO_MENU" }), []);
 
   // `durationMs` is the base session length — used as the timer bar's fixed
   // visual scale. `remainingMs` is computed against the *effective* deadline
@@ -94,6 +108,6 @@ export function useGame(initialConfig?: GameConfig) {
     remainingMs,
     durationMs,
     currentLevel: Math.round(state.difficultyScore),
-    actions: { start, beginPlaying: beginPlayingAction, answer, playAgain },
+    actions: { start, beginPlaying: beginPlayingAction, answer, playAgain, restartNow, returnToMenu },
   };
 }

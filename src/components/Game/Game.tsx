@@ -10,9 +10,21 @@ interface GameProps {
   feedback: AnswerFeedback | null;
   mode: GameMode;
   onAnswer: (index: number) => void;
+  onReturnToMenu: () => void;
+  onRestart: () => void;
 }
 
-export function Game({ question, stats, remainingMs, durationMs, feedback, mode, onAnswer }: GameProps) {
+export function Game({
+  question,
+  stats,
+  remainingMs,
+  durationMs,
+  feedback,
+  mode,
+  onAnswer,
+  onReturnToMenu,
+  onRestart,
+}: GameProps) {
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {
       const index = ["1", "2", "3", "4"].indexOf(event.key);
@@ -28,6 +40,15 @@ export function Game({ question, stats, remainingMs, durationMs, feedback, mode,
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-between bg-[#0a0a0f] px-6 py-8 text-white">
+      <div className="mb-2 flex w-full max-w-md items-center justify-between text-xs font-semibold text-white/40">
+        <button type="button" onClick={onReturnToMenu} className="transition hover:text-white/70">
+          ← Menu
+        </button>
+        <button type="button" onClick={onRestart} className="transition hover:text-white/70">
+          ↻ Restart
+        </button>
+      </div>
+
       <div className="flex w-full max-w-md items-center justify-between text-sm font-semibold uppercase tracking-widest text-white/60">
         <span>
           Score <span className="text-white">{stats.score.toLocaleString()}</span>

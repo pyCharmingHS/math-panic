@@ -60,6 +60,8 @@ export default function App() {
         feedback={feedback}
         mode={config.mode}
         onAnswer={actions.answer}
+        onReturnToMenu={actions.returnToMenu}
+        onRestart={actions.restartNow}
       />
     );
   }
