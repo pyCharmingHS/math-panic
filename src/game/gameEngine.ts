@@ -1,4 +1,5 @@
 import type { AnswerFeedback, GameConfig, GamePhase, GameStats, Question } from "../types/game";
+import type { ChallengePayload } from "../challenge/schema";
 import { createRng, randomSeed, type Rng } from "./random/prng";
 import { generateQuestion } from "./questions/generateQuestion";
 import { levelFromScore, nextDifficultyScore } from "./difficulty/difficultyEngine";
@@ -36,10 +37,37 @@ function emptyStats(): GameStats {
 export function createDefaultConfig(overrides: Partial<GameConfig> = {}): GameConfig {
   return {
     version: 1,
+    mode: "regular",
     duration: 60,
     startingDifficulty: 1,
     seed: randomSeed(),
     ...overrides,
+  };
+}
+
+export function createChallengeConfig(payload: ChallengePayload): GameConfig {
+  return {
+    version: payload.v,
+    mode: "challenge",
+    name: payload.name,
+    intro: payload.intro,
+    message: payload.message,
+    duration: payload.duration,
+    startingDifficulty: payload.startingDifficulty,
+    seed: payload.seed,
+  };
+}
+
+/** Builds a shareable payload from a config that's currently being (or was just) played. */
+export function toChallengePayload(config: GameConfig): ChallengePayload {
+  return {
+    v: config.version,
+    name: config.name,
+    intro: config.intro,
+    message: config.message,
+    duration: config.duration,
+    startingDifficulty: config.startingDifficulty,
+    seed: config.seed,
   };
 }
 
@@ -111,7 +139,13 @@ export function submitAnswer(state: EngineState, selectedIndex: number, now: num
     highestDifficulty: Math.max(state.stats.highestDifficulty, question.difficulty),
   };
 
-  const nextDifficultyScoreValue = nextDifficultyScore(state.difficultyScore, wasCorrect, responseTimeMs);
+  // Challenge mode keeps difficulty fixed at startingDifficulty so two
+  // players answering differently still get the exact same question
+  // sequence from the shared seed — that's the whole point of a challenge.
+  const nextDifficultyScoreValue =
+    state.config.mode === "challenge"
+      ? state.difficultyScore
+      : nextDifficultyScore(state.difficultyScore, wasCorrect, responseTimeMs);
   const timeAdjustmentMs = Math.min(TIME_ECONOMY.maxBonusMs, state.timeAdjustmentMs + timeDeltaMs);
 
   const feedback: AnswerFeedback = {
