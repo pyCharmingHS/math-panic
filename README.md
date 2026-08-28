@@ -17,7 +17,7 @@ npm run lint      # oxlint
 
 ## Architecture
 
-Game logic is kept separate from UI (see `.plans/initial-plan.md` for the full spec):
+Game logic is kept separate from UI:
 
 ```
 src/
@@ -34,4 +34,4 @@ src/
   utils/storage.ts       # localStorage: personal best, streak history
 ```
 
-Not yet implemented (see `.plans/initial-plan.md` for the deferred phases): shareable seeded challenge URLs, the challenge-creator UI, and any backend/leaderboard features.
+Not yet implemented: shareable seeded challenge URLs, a challenge-creator UI, and any backend/leaderboard features.
