@@ -37,12 +37,19 @@ export function Game({ question, stats, remainingMs, durationMs, feedback, onAns
       </div>
 
       <div className="relative flex flex-1 flex-col items-center justify-center gap-10">
-        <AnimatePresence mode="wait">
+        {/*
+          No `mode="wait"` here: the options grid below updates the instant
+          `question` changes, with no exit transition of its own. Waiting for
+          the old expression to finish fading out before mounting the new one
+          left a ~160ms window where old expression text was shown next to
+          the new (already-updated) options — visibly mismatched.
+        */}
+        <AnimatePresence>
           <motion.div
             key={question.expression}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
+            exit={{ opacity: 0, y: -12, position: "absolute" }}
             transition={{ duration: 0.16 }}
             className="text-5xl font-black tracking-tight sm:text-6xl"
           >
