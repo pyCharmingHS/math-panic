@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { AnswerFeedback, GameMode, GameStats, Question } from "../../types/game";
+import type { AnswerFeedback, AnswerMode, GameMode, GameStats, Question } from "../../types/game";
 
 interface GameProps {
   question: Question;
@@ -9,10 +9,13 @@ interface GameProps {
   durationMs: number;
   feedback: AnswerFeedback | null;
   mode: GameMode;
-  onAnswer: (index: number) => void;
+  answerMode: AnswerMode;
+  onAnswer: (value: number) => void;
   onReturnToMenu: () => void;
   onRestart: () => void;
 }
+
+const MAX_TYPED_LENGTH = 7; // sign + up to 6 digits, comfortably covers this game's number ranges
 
 export function Game({
   question,
@@ -21,18 +24,54 @@ export function Game({
   durationMs,
   feedback,
   mode,
+  answerMode,
   onAnswer,
   onReturnToMenu,
   onRestart,
 }: GameProps) {
+  const isTyped = answerMode === "typed";
+  const [typedValue, setTypedValue] = useState("");
+
+  // Clear whatever was typed as soon as a new question comes in — covers
+  // both a successful submit and a timeout-driven advance.
   useEffect(() => {
+    setTypedValue("");
+  }, [question]);
+
+  useEffect(() => {
+    if (isTyped) return;
     function handleKey(event: KeyboardEvent) {
       const index = ["1", "2", "3", "4"].indexOf(event.key);
       if (index !== -1) onAnswer(index);
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [onAnswer]);
+  }, [isTyped, onAnswer]);
+
+  function submitTyped() {
+    if (typedValue === "" || typedValue === "-") return;
+    const parsed = Number(typedValue);
+    if (!Number.isFinite(parsed)) return;
+    onAnswer(parsed);
+  }
+
+  useEffect(() => {
+    if (!isTyped) return;
+    function handleKey(event: KeyboardEvent) {
+      if (event.key >= "0" && event.key <= "9") {
+        setTypedValue((v) => (v.length >= MAX_TYPED_LENGTH ? v : v + event.key));
+      } else if (event.key === "-") {
+        setTypedValue((v) => (v.startsWith("-") ? v.slice(1) : "-" + v));
+      } else if (event.key === "Backspace") {
+        setTypedValue((v) => v.slice(0, -1));
+      } else if (event.key === "Enter") {
+        submitTyped();
+      }
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTyped, typedValue]);
 
   const remainingSeconds = Math.ceil(remainingMs / 1000);
   const timeRatio = durationMs > 0 ? Math.min(1, remainingMs / durationMs) : 0;
@@ -53,25 +92,32 @@ export function Game({
         <span>
           Score <span className="text-white">{stats.score.toLocaleString()}</span>
         </span>
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] tracking-wider ${
-            mode === "challenge" ? "bg-indigo-500/20 text-indigo-300" : "bg-white/10 text-white/50"
-          }`}
-        >
-          {mode === "challenge" ? "Challenge" : "Regular"}
+        <span className="flex gap-1">
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] tracking-wider ${
+              mode === "challenge" ? "bg-indigo-500/20 text-indigo-300" : "bg-white/10 text-white/50"
+            }`}
+          >
+            {mode === "challenge" ? "Challenge" : "Regular"}
+          </span>
+          {isTyped && (
+            <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] tracking-wider text-rose-300">
+              Hardcore
+            </span>
+          )}
         </span>
         <span className="flex items-center gap-1 text-white">
           {stats.streak > 0 && "🔥"} {stats.streak}
         </span>
       </div>
 
-      <div className="relative flex flex-1 flex-col items-center justify-center gap-10">
+      <div className="relative flex flex-1 flex-col items-center justify-center gap-8">
         {/*
-          No `mode="wait"` here: the options grid below updates the instant
+          No `mode="wait"` here: the answer UI below updates the instant
           `question` changes, with no exit transition of its own. Waiting for
           the old expression to finish fading out before mounting the new one
           left a ~160ms window where old expression text was shown next to
-          the new (already-updated) options — visibly mismatched.
+          the new (already-updated) answer UI — visibly mismatched.
         */}
         <AnimatePresence>
           <motion.div
@@ -86,18 +132,53 @@ export function Game({
           </motion.div>
         </AnimatePresence>
 
-        <div className="grid w-full max-w-md grid-cols-2 gap-3">
-          {question.options.map((option, index) => (
+        {isTyped ? (
+          <div className="flex w-full max-w-md flex-col items-center gap-3">
+            <div className="w-full rounded-2xl border-2 border-indigo-400/60 bg-white/5 py-4 text-center text-3xl font-bold tabular-nums text-white">
+              {typedValue === "" ? <span className="text-white/30">?</span> : typedValue}
+            </div>
+            <div className="grid w-full grid-cols-3 gap-2">
+              {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
+                <TypedKey
+                  key={digit}
+                  label={digit}
+                  onClick={() =>
+                    setTypedValue((v) => (v.length >= MAX_TYPED_LENGTH ? v : v + digit))
+                  }
+                />
+              ))}
+              <TypedKey
+                label="±"
+                onClick={() => setTypedValue((v) => (v.startsWith("-") ? v.slice(1) : "-" + v))}
+              />
+              <TypedKey label="0" onClick={() => setTypedValue((v) => (v.length >= MAX_TYPED_LENGTH ? v : v + "0"))} />
+              <TypedKey label="⌫" onClick={() => setTypedValue((v) => v.slice(0, -1))} />
+            </div>
             <button
-              key={`${question.expression}-${index}`}
               type="button"
-              onClick={() => onAnswer(index)}
-              className="rounded-2xl border border-white/10 bg-white/5 py-6 text-2xl font-bold text-white transition active:scale-95 hover:border-white/30 hover:bg-white/10"
+              onClick={(event) => {
+                submitTyped();
+                event.currentTarget.blur();
+              }}
+              className="w-full rounded-2xl bg-indigo-500 py-3 text-lg font-bold text-white transition active:scale-95 hover:bg-indigo-400"
             >
-              {option}
+              Enter
             </button>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className="grid w-full max-w-md grid-cols-2 gap-3">
+            {question.options.map((option, index) => (
+              <button
+                key={`${question.expression}-${index}`}
+                type="button"
+                onClick={() => onAnswer(index)}
+                className="rounded-2xl border border-white/10 bg-white/5 py-6 text-2xl font-bold text-white transition active:scale-95 hover:border-white/30 hover:bg-white/10"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
 
         <AnimatePresence>
           {feedback && (
@@ -160,5 +241,26 @@ export function Game({
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+function TypedKey({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        onClick();
+        // These keys keep the same key= across questions (unlike the choice
+        // buttons, which remount each question), so a click leaves one of
+        // them focused indefinitely. Without blurring, a later physical
+        // Enter press both submits (via the keydown handler below) *and*
+        // re-fires this button's native click, leaking a stray digit into
+        // the next question's input.
+        event.currentTarget.blur();
+      }}
+      className="rounded-xl border border-white/10 bg-white/5 py-4 text-xl font-bold text-white transition active:scale-95 hover:border-white/30 hover:bg-white/10"
+    >
+      {label}
+    </button>
   );
 }

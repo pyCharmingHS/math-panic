@@ -62,8 +62,8 @@ export function Results({ config, stats, personalBest, onPlayAgain }: ResultsPro
         </button>
       </div>
       <p className="max-w-xs text-xs text-white/30">
-        Sends a link that locks in this exact seed and difficulty ({config.startingDifficulty}) — same problems for
-        whoever opens it.
+        Sends a link that locks in this exact seed, difficulty ({config.startingDifficulty}), and answer mode (
+        {config.answerMode === "typed" ? "Hardcore" : "Multiple Choice"}) — same problems for whoever opens it.
       </p>
       <p className="text-xs text-white/25">Press Enter or Space to play again</p>
     </div>

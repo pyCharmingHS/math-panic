@@ -30,6 +30,10 @@ export default function App() {
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {
       if (event.key !== " " && event.key !== "Enter") return;
+      // Landing now has its own focusable buttons (answer-mode toggle) — if
+      // one of them has focus, let its native click handle the keypress
+      // instead of also firing this shortcut underneath it.
+      if (event.target instanceof HTMLElement && event.target !== document.body) return;
       if (phase === "IDLE") {
         event.preventDefault();
         actions.start();
@@ -43,7 +47,14 @@ export default function App() {
   }, [phase, actions]);
 
   if (phase === "IDLE") {
-    return <Landing config={config} personalBest={personalBest} onStart={actions.start} />;
+    return (
+      <Landing
+        config={config}
+        personalBest={personalBest}
+        onStart={actions.start}
+        onSetAnswerMode={actions.setAnswerMode}
+      />
+    );
   }
 
   if (phase === "COUNTDOWN") {
@@ -59,6 +70,7 @@ export default function App() {
         durationMs={durationMs}
         feedback={feedback}
         mode={config.mode}
+        answerMode={config.answerMode}
         onAnswer={actions.answer}
         onReturnToMenu={actions.returnToMenu}
         onRestart={actions.restartNow}
