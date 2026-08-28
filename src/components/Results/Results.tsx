@@ -1,0 +1,50 @@
+import type { GameStats } from "../../types/game";
+
+interface ResultsProps {
+  stats: GameStats;
+  personalBest: number;
+  onPlayAgain: () => void;
+}
+
+export function Results({ stats, personalBest, onPlayAgain }: ResultsProps) {
+  const accuracy = stats.totalQuestions > 0 ? Math.round((stats.correct / stats.totalQuestions) * 100) : 0;
+  const bestSoFar = Math.max(personalBest, stats.score);
+  const isNewBest = stats.score > 0 && stats.score >= personalBest;
+
+  return (
+    <div className="flex min-h-svh flex-col items-center justify-center gap-8 bg-[#0a0a0f] px-6 text-center text-white">
+      <div>
+        <p className="text-sm font-bold uppercase tracking-[0.3em] text-white/50">Time!</p>
+        <p className="mt-2 text-6xl font-black tracking-tight">{stats.score.toLocaleString()}</p>
+        {isNewBest && <p className="mt-2 text-sm font-semibold text-emerald-400">New personal best!</p>}
+      </div>
+
+      <dl className="grid w-full max-w-xs grid-cols-2 gap-x-6 gap-y-4 text-left">
+        <Stat label="Correct" value={stats.correct} />
+        <Stat label="Accuracy" value={`${accuracy}%`} />
+        <Stat label="Best Streak" value={stats.bestStreak} />
+        <Stat label="Avg. Speed" value={`${(stats.averageResponseTime / 1000).toFixed(1)}s`} />
+        <Stat label="Max Difficulty" value={stats.highestDifficulty} />
+        <Stat label="Personal Best" value={bestSoFar.toLocaleString()} />
+      </dl>
+
+      <button
+        type="button"
+        onClick={onPlayAgain}
+        className="w-full max-w-xs rounded-2xl bg-indigo-500 py-4 text-lg font-bold text-white transition active:scale-95 hover:bg-indigo-400"
+      >
+        Play Again
+      </button>
+      <p className="text-xs text-white/25">Press Enter or Space to play again</p>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-widest text-white/40">{label}</dt>
+      <dd className="text-xl font-bold">{value}</dd>
+    </div>
+  );
+}
