@@ -44,7 +44,10 @@ export interface GameConfig {
 
 export interface AnswerFeedback {
   kind: "correct" | "incorrect";
+  /** Signed — negative on a miss. */
   pointsAwarded: number;
+  /** Signed ms added/removed from the clock for this answer. */
+  timeDeltaMs: number;
   selectedIndex: number;
   correctIndex: number;
   key: number;

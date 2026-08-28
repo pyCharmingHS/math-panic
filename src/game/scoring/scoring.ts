@@ -6,6 +6,10 @@
 export const SCORING_CONFIG = {
   basePoints: 100,
   difficultyMultiplierStep: 0.25,
+  // Flat deduction on a wrong answer. Set high enough that blind guessing
+  // (~25% hit rate across 4 options) has clearly negative expected value even
+  // at the fastest speed tier — otherwise mashing one button forever is free.
+  missPenalty: 80,
   speedTiers: [
     { maxMs: 1500, multiplier: 1.5 },
     { maxMs: 3000, multiplier: 1.25 },
@@ -19,6 +23,19 @@ export const SCORING_CONFIG = {
     { min: 3, multiplier: 1.15 },
     { min: 0, multiplier: 1.0 },
   ],
+};
+
+/**
+ * Time added/removed from the clock on each answer, in ms. Penalty > bonus
+ * so guessing also burns through the run faster, on top of the point loss.
+ * `maxBonusMs` caps how much total time a run can gain — without it, a
+ * player answering faster than correctBonusMs every time never runs out
+ * of clock at all.
+ */
+export const TIME_ECONOMY = {
+  correctBonusMs: 1500,
+  incorrectPenaltyMs: 2000,
+  maxBonusMs: 30_000,
 };
 
 export function speedMultiplier(responseTimeMs: number): number {

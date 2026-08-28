@@ -66,11 +66,16 @@ export function useGame() {
     [],
   );
 
+  // `durationMs` is the base session length — used as the timer bar's fixed
+  // visual scale. `remainingMs` is computed against the *effective* deadline
+  // (base + time bonuses/penalties from answers so far), so it can exceed
+  // durationMs; the bar clamps its width but the numeric readout doesn't.
   const durationMs = state.config.duration * 1000;
   const remainingMs = useMemo(() => {
     if (state.phase !== "PLAYING" || state.startedAt === null) return durationMs;
-    return Math.max(0, durationMs - (now - state.startedAt));
-  }, [state.phase, state.startedAt, durationMs, now]);
+    const effectiveDurationMs = durationMs + state.timeAdjustmentMs;
+    return Math.max(0, effectiveDurationMs - (now - state.startedAt));
+  }, [state.phase, state.startedAt, state.timeAdjustmentMs, durationMs, now]);
 
   return {
     phase: state.phase,

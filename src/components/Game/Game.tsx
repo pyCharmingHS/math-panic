@@ -22,7 +22,7 @@ export function Game({ question, stats, remainingMs, durationMs, feedback, onAns
   }, [onAnswer]);
 
   const remainingSeconds = Math.ceil(remainingMs / 1000);
-  const timeRatio = durationMs > 0 ? remainingMs / durationMs : 0;
+  const timeRatio = durationMs > 0 ? Math.min(1, remainingMs / durationMs) : 0;
   const lowTime = remainingSeconds <= 10;
 
   return (
@@ -75,23 +75,53 @@ export function Game({ question, stats, remainingMs, durationMs, feedback, onAns
                 feedback.kind === "correct" ? "text-emerald-400" : "text-rose-400"
               }`}
             >
-              {feedback.kind === "correct" ? `+${feedback.pointsAwarded}` : "MISS"}
+              {feedback.pointsAwarded >= 0 ? `+${feedback.pointsAwarded}` : feedback.pointsAwarded}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      <div className="w-full max-w-md">
+      <div className="relative w-full max-w-md">
         <div className="mb-1 flex justify-between text-xs font-semibold text-white/50">
           <span>{remainingSeconds}s</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
           <motion.div
-            animate={{ width: `${Math.max(0, timeRatio * 100)}%` }}
+            animate={{ width: `${timeRatio * 100}%` }}
             transition={{ ease: "linear", duration: 0.1 }}
             className={`h-full rounded-full ${lowTime ? "bg-rose-500" : "bg-indigo-400"}`}
           />
+          <AnimatePresence>
+            {feedback && (
+              <motion.div
+                key={feedback.key}
+                initial={{ opacity: 0.55 }}
+                animate={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className={`pointer-events-none absolute inset-0 rounded-full ${
+                  feedback.timeDeltaMs >= 0 ? "bg-emerald-400" : "bg-rose-500"
+                }`}
+              />
+            )}
+          </AnimatePresence>
         </div>
+        <AnimatePresence>
+          {feedback && (
+            <motion.div
+              key={feedback.key}
+              initial={{ opacity: 0, y: 0, scale: 0.85 }}
+              animate={{ opacity: 1, y: -20, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className={`pointer-events-none absolute -top-1 right-0 text-sm font-bold ${
+                feedback.timeDeltaMs >= 0 ? "text-emerald-400" : "text-rose-400"
+              }`}
+            >
+              {feedback.timeDeltaMs >= 0 ? "+" : ""}
+              {(feedback.timeDeltaMs / 1000).toFixed(1)}s
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
